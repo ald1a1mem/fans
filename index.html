@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALPHA DRIVE ONE 粉絲留言板</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #9FB5C3;
+            --primary-hover: #839ba9;
+            --card-bg: rgba(255, 255, 255, 0.88);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            color: #333;
+            /* 背景圖：請將檔名確認與上傳到 GitHub 的圖片檔名一致 */
+            background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), 
+                        url('1.jpg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 680px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #444;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            background: #fff;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        textarea {
+            resize: vertical;
+            height: 110px;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 13px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        .messages-header {
+            margin-top: 35px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .message-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message-card {
+            background: white;
+            padding: 16px;
+            border-radius: 10px;
+            border-left: 5px solid var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .author-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-author {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .member-tag {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .message-body {
+            line-height: 1.6;
+            word-break: break-all;
+            white-space: pre-line;
+            color: #444;
+        }
+
+        .delete-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ALPHA DRIVE ONE</h1>
+        <p class="subtitle">專屬粉絲留言板 — 隨時留下你想對他們說的話</p>
+    </header>
+
+    <!-- 留言表單 -->
+    <div class="form-group">
+        <label for="nickname">暱稱（留空則顯示為「匿名粉絲」）</label>
+        <input type="text" id="nickname" placeholder="請輸入你的暱稱" maxlength="20">
+    </div>
+
+    <div class="form-group">
+        <label for="targetMember">想要對誰說？</label>
+        <select id="targetMember">
+            <option value="全體成員">給 全體成員</option>
+            <option value="JUNSEO">給 俊抒 JUNSEO</option>
+            <option value="ARNO">給 ARNO</option>
+            <option value="LEO">給 LEO</option>
+            <option value="虔佑">給 虔佑 GEONWOO</option>
+            <option value="相沅">給 相沅 SANGWON</option>
+            <option value="鑫隆">給 鑫隆 XINLONG</option>
+            <option value="安信">給 安信 ANXIN</option>
+            <option value="相炫">給 相炫 SANGHYEON</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="content">留言內容</label>
+        <textarea id="content" placeholder="寫下對他們的祝福或想說的話..." maxlength="400" oninput="updateCount()"></textarea>
+        <div class="char-count"><span id="charNum">0</span> / 400 字</div>
+    </div>
+
+    <button class="btn-submit" onclick="submitMessage()">送出留言</button>
+
+    <!-- 留言列表區 -->
+    <div class="messages-header">
+        <span>粉絲應援留言區</span>
+    </div>
+    <div id="messageList" class="message-list">
+        <!-- 動態載入留言 -->
+    </div>
+</div>
+
+<script>
+    // 1. 請替換為你在 Firebase 專案中取得的 firebaseConfig
+const firebaseConfig = {
+  apiKey: "AIzaSyCJWtokAnLi7vULD5nZMOQWtmpdLJIwMts",
+  authDomain: "realtime-database-9a2cf.firebaseapp.com",
+  databaseURL: "https://realtime-database-9a2cf-default-rtdb.firebaseio.com/",
+  projectId: "realtime-database-9a2cf",
+  storageBucket: "realtime-database-9a2cf.firebasestorage.app",
+  messagingSenderId: "40143618605",
+  appId: "1:40143618605:web:8114c13873343c60dfeea4"
+};
+
+    // 初始化 Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const messagesRef = database.ref('messages');
+
+    // 檢查網址是否帶有管理者權限 (例如: index.html?admin=true)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdmin = urlParams.get('admin') === 'true';
+
+    // 即時計算字數
+    function updateCount() {
+        const content = document.getElementById('content').value;
+        document.getElementById('charNum').innerText = content.length;
+    }
+
+    // 發送留言
+    function submitMessage() {
+        const nicknameInput = document.getElementById('nickname');
+        const targetMemberInput = document.getElementById('targetMember');
+        const contentInput = document.getElementById('content');
+
+        const nickname = nicknameInput.value.trim() || '匿名粉絲';
+        const targetMember = targetMemberInput.value;
+        const content = contentInput.value.trim();
+
+        if (!content) {
+            alert('請寫下你想留的訊息喔！');
+            return;
+        }
+
+        // 寫入 Firebase 資料庫
+        const newMsgRef = messagesRef.push();
+        newMsgRef.set({
+            nickname: nickname,
+            targetMember: targetMember,
+            content: content,
+            timestamp: Date.now()
+        }, (error) => {
+            if (error) {
+                alert('發送失敗，請稍後再試！');
+            } else {
+                contentInput.value = '';
+                nicknameInput.value = '';
+                updateCount();
+                alert('留言成功送出！');
+            }
+        });
+    }
+
+    // 監聽並顯示留言
+    messagesRef.on('value', (snapshot) => {
+        const messageList = document.getElementById('messageList');
+        messageList.innerHTML = '';
+        const data = snapshot.val();
+
+        if (!data) {
+            messageList.innerHTML = '<p style="text-align:center; color:#777; padding:20px;">目前還沒有留言，快來成為第一個留言的人吧！</p>';
+            return;
+        }
+
+        // 留言倒序排列（最新的在最上面）
+        const keys = Object.keys(data).reverse();
+        keys.forEach(key => {
+            const msg = data[key];
+            const date = new Date(msg.timestamp);
+            const formattedTime = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+            const card = document.createElement('div');
+            card.className = 'message-card';
+            card.innerHTML = `
+                <div class="message-meta">
+                    <div class="author-info">
+                        <span class="message-author">${escapeHtml(msg.nickname)}</span>
+                        <span class="member-tag">@${escapeHtml(msg.targetMember || '全體成員')}</span>
+                    </div>
+                    <span class="message-time">${formattedTime}</span>
+                </div>
+                <div class="message-body">${escapeHtml(msg.content)}</div>
+                ${isAdmin ? `<button class="delete-btn" style="display:block;" onclick="deleteMessage('${key}')">刪除</button>` : ''}
+            `;
+            messageList.appendChild(card);
+        });
+    });
+
+    // 管理員刪除留言
+    function deleteMessage(key) {
+        if (confirm('確定要刪除這條留言嗎？')) {
+            messagesRef.child(key).remove();
+        }
+    }
+
+    // 防範 XSS 攻擊
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/'/g, "&#039;");
+    }
+</script>
+
+</body>
+</html>
