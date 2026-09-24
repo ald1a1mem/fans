@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALPHA DRIVE ONE 粉絲留言板</title>
-<link rel="icon" href="https://github.com/ald1a1meme.png">
+    <!-- 圖示改為你的 GitHub 帳號頭像 -->
+    <link rel="icon" type="image/png" href="https://github.com/ald1a1mem.png">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -25,7 +26,6 @@
         body {
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
             color: #333;
-            /* 背景圖：請將檔名確認與上傳到 GitHub 的圖片檔名一致 */
             background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), 
                         url('1.jpg') no-repeat center center fixed;
             background-size: cover;
@@ -257,16 +257,16 @@
 </div>
 
 <script>
-    // 1. 請替換為你在 Firebase 專案中取得的 firebaseConfig
-const firebaseConfig = {
-  apiKey: "AIzaSyCJWtokAnLi7vULD5nZMOQWtmpdLJIwMts",
-  authDomain: "realtime-database-9a2cf.firebaseapp.com",
-  databaseURL: "https://realtime-database-9a2cf-default-rtdb.firebaseio.com/",
-  projectId: "realtime-database-9a2cf",
-  storageBucket: "realtime-database-9a2cf.firebasestorage.app",
-  messagingSenderId: "40143618605",
-  appId: "1:40143618605:web:8114c13873343c60dfeea4"
-};
+    // 1. Firebase 設定檔
+    const firebaseConfig = {
+        apiKey: "AIzaSyCJWtokAnLi7vULD5nZMOQWtmpdLJIwMts",
+        authDomain: "realtime-database-9a2cf.firebaseapp.com",
+        databaseURL: "https://realtime-database-9a2cf-default-rtdb.firebaseio.com/",
+        projectId: "realtime-database-9a2cf",
+        storageBucket: "realtime-database-9a2cf.firebasestorage.app",
+        messagingSenderId: "40143618605",
+        appId: "1:40143618605:web:8114c13873343c60dfeea4"
+    };
 
     // 初始化 Firebase
     firebase.initializeApp(firebaseConfig);
@@ -306,13 +306,30 @@ const firebaseConfig = {
             content: content,
             timestamp: Date.now()
         }, (error) => {
+            const btn = document.querySelector('.btn-submit');
+            
             if (error) {
-                alert('發送失敗，請稍後再試！');
+                // 發送失敗：按鈕變紅
+                btn.innerText = '發送失敗，請重試！❌';
+                btn.style.backgroundColor = '#e74c3c';
+                
+                setTimeout(() => {
+                    btn.innerText = '送出留言';
+                    btn.style.backgroundColor = '';
+                }, 2000);
             } else {
+                // 發送成功：按鈕變綠
                 contentInput.value = '';
                 nicknameInput.value = '';
                 updateCount();
-                alert('留言成功送出！');
+                
+                btn.innerText = '留言成功送出！✨';
+                btn.style.backgroundColor = '#2ecc71';
+                
+                setTimeout(() => {
+                    btn.innerText = '送出留言';
+                    btn.style.backgroundColor = '';
+                }, 2000);
             }
         });
     }
